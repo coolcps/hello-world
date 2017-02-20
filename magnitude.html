@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      /* Always set the map height explicitly to define the size of the div
+       * element that contains the map. */
+      #map {
+        height: 100%;
+      }
+      /* Optional: Makes the sample page fill the window. */
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <script>
+      var map;
+	  var cktLayer;
+	  var buildingLayer;
+	  
+	  
+      function CenterControl(controlDiv, map) {
+
+        // Set CSS for the control border.
+        var controlUI = document.createElement('div');
+        controlUI.style.backgroundColor = '#fff';
+        controlUI.style.border = '2px solid #fff';
+        controlUI.style.borderRadius = '3px';
+        controlUI.style.boxShadow = '0 2px 6px rgba(0,0,0,.3)';
+        controlUI.style.cursor = 'pointer';
+        controlUI.style.marginBottom = '22px';
+        controlUI.style.textAlign = 'center';
+        controlUI.title = 'Click to toggle ckts';
+        controlDiv.appendChild(controlUI);
+
+        // Set CSS for the control interior.
+        var controlText = document.createElement('div');
+        controlText.style.color = 'rgb(25,25,25)';
+        controlText.style.fontFamily = 'Roboto,Arial,sans-serif';
+        controlText.style.fontSize = '16px';
+        controlText.style.lineHeight = '38px';
+        controlText.style.paddingLeft = '5px';
+        controlText.style.paddingRight = '5px';
+        controlText.innerHTML = 'Toggle Ckts';
+        controlUI.appendChild(controlText);
+
+        // Setup the click event listeners: simply set the map to Chicago.
+        controlUI.addEventListener('click', function() {
+          if (cktLayer.getMap() === null){
+		  cktLayer.setMap(map);
+		 } else {
+		  cktLayer.setMap(null);
+		 }
+        });
+
+      }
+
+
+
+      function initMap() {
+        map = new google.maps.Map(document.getElementById('map'), {
+          zoom: 2,
+          center: {lat: -33.865427, lng: 151.196123},
+          mapTypeId: 'terrain'
+        });
+	    cktLayer = new google.maps.Data();
+	    buildingLayer = new google.maps.Data();
+
+		cktLayer.setStyle(function(feature) {
+		  var geo = feature.getGeometry();
+		  var color = '#000000'
+		  var weight = 2
+		  console.info(feature.getProperty('type'))
+		  
+		  //Change color of line based on circuit type
+			if (feature.getProperty('type') === 'P2P') {
+				color = '#00FF40';
+			} else if (feature.getProperty('type') === 'MPLS'){
+				color = '#FF0000';
+			} else if (feature.getProperty('type') === 'DMVPN'){
+				color = '#FFFF00';
+			} else if (feature.getProperty('type') === 'SD-WAN'){
+				color = '#5858FA';
+			}
+		  //Change thickness of line based on bandwidth
+			if (feature.getProperty('speed') === '10G') {
+				weight = 5;
+				console.info('10G')
+			} else if (feature.getProperty('speed') === '1G'){
+				weight = 3;
+				console.info('1G')
+			} else {
+				weight = 1;
+				console.info('Other')
+			}
+          return {
+          geodesic: true,
+          strokeColor: color,
+          strokeOpacity: 0.8,
+          strokeWeight: weight
+          };
+        });
+		cktLayer.loadGeoJson('https://rawgit.com/coolcps/hello-world/master/ckt.geojson');
+		cktLayer.setMap(map);
+		
+		buildingLayer.setStyle(function(feature) {
+          var magnitude = feature.getProperty('Size');
+		  var s = 35
+		  if (magnitude > 0) {
+			s = magnitude/50 + 35
+			if (s > 75) {
+			  s = 75
+			  }
+		  }
+          return {
+            //icon: getCircle(magnitude)
+			icon: {url: 'https://github.com/coolcps/hello-world/raw/master/office-building-300px.png', scaledSize: new google.maps.Size(s, s)},
+			fillOpacity: .8
+          };
+        });
+
+/*
+      function getCircle(magnitude) {
+        return {
+          path: google.maps.SymbolPath.CIRCLE,
+          fillColor: 'red',
+          fillOpacity: .2,
+          scale: Math.pow(2, magnitude) / 2,
+          strokeColor: 'white',
+          strokeWeight: .5
+        };
+      }*/
+		buildingLayer.loadGeoJson('https://rawgit.com/coolcps/hello-world/master/building.geojson');
+		buildingLayer.setMap(map);	  
+	  
+	  
+	  
+	  // Create the DIV to hold the control and call the CenterControl()
+        // constructor passing in this DIV.
+        var centerControlDiv = document.createElement('div');
+        var centerControl = new CenterControl(centerControlDiv, map);
+
+        centerControlDiv.index = 1;
+        map.controls[google.maps.ControlPosition.TOP_CENTER].push(centerControlDiv);
+	  
+	  
+      }
+
+	  
+	  
+    </script>
+    <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB6sj1S5460Q3hzyEiguWbPfbvx1mIlszU&callback=initMap">
+    </script>
+  </body>
+</html>
